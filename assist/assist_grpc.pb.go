@@ -32,6 +32,7 @@ const (
 	Assist_GetUserFolders_FullMethodName    = "/assist.Assist/GetUserFolders"
 	Assist_SendMessage_FullMethodName       = "/assist.Assist/SendMessage"
 	Assist_SendMessageStream_FullMethodName = "/assist.Assist/SendMessageStream"
+	Assist_AddMessage_FullMethodName        = "/assist.Assist/AddMessage"
 	Assist_GetMessageByID_FullMethodName    = "/assist.Assist/GetMessageByID"
 	Assist_GetMessagesInChat_FullMethodName = "/assist.Assist/GetMessagesInChat"
 )
@@ -53,6 +54,7 @@ type AssistClient interface {
 	GetUserFolders(ctx context.Context, in *GetUserFoldersRequest, opts ...grpc.CallOption) (*GetUserFoldersResponse, error)
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error)
 	SendMessageStream(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageDelta], error)
+	AddMessage(ctx context.Context, in *AddMessageRequest, opts ...grpc.CallOption) (*Empty, error)
 	GetMessageByID(ctx context.Context, in *GetMessageByIDRequest, opts ...grpc.CallOption) (*GetMessageByIDResponse, error)
 	GetMessagesInChat(ctx context.Context, in *GetMessagesInChatRequest, opts ...grpc.CallOption) (*GetMessagesInChatResponse, error)
 }
@@ -204,6 +206,16 @@ func (c *assistClient) SendMessageStream(ctx context.Context, in *SendMessageReq
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Assist_SendMessageStreamClient = grpc.ServerStreamingClient[MessageDelta]
 
+func (c *assistClient) AddMessage(ctx context.Context, in *AddMessageRequest, opts ...grpc.CallOption) (*Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, Assist_AddMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *assistClient) GetMessageByID(ctx context.Context, in *GetMessageByIDRequest, opts ...grpc.CallOption) (*GetMessageByIDResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetMessageByIDResponse)
@@ -241,6 +253,7 @@ type AssistServer interface {
 	GetUserFolders(context.Context, *GetUserFoldersRequest) (*GetUserFoldersResponse, error)
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)
 	SendMessageStream(*SendMessageRequest, grpc.ServerStreamingServer[MessageDelta]) error
+	AddMessage(context.Context, *AddMessageRequest) (*Empty, error)
 	GetMessageByID(context.Context, *GetMessageByIDRequest) (*GetMessageByIDResponse, error)
 	GetMessagesInChat(context.Context, *GetMessagesInChatRequest) (*GetMessagesInChatResponse, error)
 	mustEmbedUnimplementedAssistServer()
@@ -291,6 +304,9 @@ func (UnimplementedAssistServer) SendMessage(context.Context, *SendMessageReques
 }
 func (UnimplementedAssistServer) SendMessageStream(*SendMessageRequest, grpc.ServerStreamingServer[MessageDelta]) error {
 	return status.Errorf(codes.Unimplemented, "method SendMessageStream not implemented")
+}
+func (UnimplementedAssistServer) AddMessage(context.Context, *AddMessageRequest) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddMessage not implemented")
 }
 func (UnimplementedAssistServer) GetMessageByID(context.Context, *GetMessageByIDRequest) (*GetMessageByIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMessageByID not implemented")
@@ -546,6 +562,24 @@ func _Assist_SendMessageStream_Handler(srv interface{}, stream grpc.ServerStream
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Assist_SendMessageStreamServer = grpc.ServerStreamingServer[MessageDelta]
 
+func _Assist_AddMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AssistServer).AddMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Assist_AddMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AssistServer).AddMessage(ctx, req.(*AddMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Assist_GetMessageByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetMessageByIDRequest)
 	if err := dec(in); err != nil {
@@ -636,6 +670,10 @@ var Assist_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendMessage",
 			Handler:    _Assist_SendMessage_Handler,
+		},
+		{
+			MethodName: "AddMessage",
+			Handler:    _Assist_AddMessage_Handler,
 		},
 		{
 			MethodName: "GetMessageByID",
